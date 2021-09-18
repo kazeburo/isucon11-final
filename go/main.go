@@ -656,7 +656,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		classIdValues := make([]string, 0, len(classes))
 		for _, class := range classes {
 			classIdList = append(classIdList, class.ID)
-			classIdValues = append(classIdValues, "?")
+			classIdValues = append(classIdValues, "'"+class.ID+"'")
 		}
 		log.Printf("XXX classes[%v] classIdValues [%v]", classes, classIdValues)
 		type SubmissionsCount struct {
@@ -668,7 +668,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			&submissionsCountList,
 			"SELECT class_id, COUNT(*) as `count` FROM `submissions` WHERE "+
 				"`class_id` IN ("+strings.Join(classIdValues, ",")+") "+
-				"GROUP by class_id", classIdList...)
+				"GROUP by class_id")
 		if err != nil {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
@@ -681,7 +681,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		}
 		myScoreList := []MyScore{}
 		err = h.DB.Select(
-			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID, classIdList...)
+			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID)
 		if err != nil {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
