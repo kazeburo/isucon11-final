@@ -651,13 +651,14 @@ func (h *handlers) getTotalScoresCache(id string) []int {
 
 func (h *handlers) updateTotalScoresCache() error {
 	var totals []totalScore
-	query := "SELECT `courses`.`id`,IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
+	/* query := "SELECT `courses`.`id`,IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
 		" FROM `users`" +
 		" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
 		" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id`" +
 		" LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id`" +
 		" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
-		" GROUP BY `courses`.`id`,`users`.`id`"
+		" GROUP BY `users`.`id`" */
+	query := 'SELECT cid AS id, sum(score) AS total_score FROM (SELECT `courses`.`id` AS cid,`users`.`id` AS uid,`submissions`.`score` FROM `users` JOIN `registrations` ON `users`.`id` = `registrations`.`user_id` JOIN `courses` ON `registrations`.`course_id` = `courses`.`id` LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id` LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`) AS t GROUP BY cid,uid'
 	if err := h.DB.Select(&totals, query); err != nil {
 		log.Printf("%v", err)
 		return err
