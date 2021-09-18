@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -1306,13 +1307,14 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 }
 
 func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) error {
-	tmpDir := AssignmentsDirectory + classID + "/"
-	if err := exec.Command("rm", "-rf", tmpDir).Run(); err != nil {
-		return err
+	dir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
+	if err != nil {
+		log.Fatal(err)
 	}
-	if err := exec.Command("mkdir", tmpDir).Run(); err != nil {
-		return err
-	}
+	defer func() {
+		exec.Command("rm", "-rf", dir).Run()
+	}()
+	tmpDir := dir + "/" + AssignmentsDirectory + classID + "/"
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
