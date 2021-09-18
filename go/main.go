@@ -1238,6 +1238,12 @@ type Submission struct {
 func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	classID := c.Param("classID")
 
+	zipFilePath := AssignmentsDirectory + classID + ".zip"
+	_, err := os.Stat(zipFilePath)
+	if err == nil { // exists
+		return c.File(zipFilePath)
+	}
+
 	tx, err := h.DB.Beginx()
 	if err != nil {
 		c.Logger().Error(err)
@@ -1263,7 +1269,6 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	zipFilePath := AssignmentsDirectory + classID + ".zip"
 	var ziperr error = nil
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
