@@ -133,8 +133,6 @@ func updateGpas(db *sqlx.DB) {
 }
 
 func genGpas(db *sqlx.DB) {
-	gpasLock.Lock()
-	defer gpasLock.Unlock()
 
 	var gpas []float64
 	query := "SELECT IFNULL(SUM(`submissions`.`score` * `courses`.`credit`), 0) / 100 / `credits`.`credits` AS `gpa`" +
@@ -156,6 +154,9 @@ func genGpas(db *sqlx.DB) {
 		log.Fatal(err)
 		return
 	}
+
+	gpasLock.Lock()
+	defer gpasLock.Unlock()
 	gpasCache = gpas
 }
 
@@ -721,6 +722,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 
 	// GPAの統計値
 	// 一つでも修了した科目がある学生のGPA一覧
+	genGpas(h.DB)
 	var gpas []float64
 	gpasLock.RLock()
 	defer gpasLock.RUnlock()
