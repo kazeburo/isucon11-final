@@ -25,6 +25,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -43,6 +44,8 @@ var gpasLock sync.RWMutex
 var gpasCache []float64
 
 var use_profiler = true
+
+var sfGroup singleflight.Group
 
 func initProfiler() {
 	if !use_profiler {
@@ -626,8 +629,10 @@ func (h *handlers) GetGrades(c echo.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		genGpas(h.DB)
+		sfGroup.Do("genGpas", func() (interface{}, error) {
+			genGpas(h.DB)
+			return nil, nil
+		})
 	}()
 
 	// 履修している科目一覧取得
