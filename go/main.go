@@ -1288,7 +1288,6 @@ type Submission struct {
 func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	classID := c.Param("classID")
 
-	tfrom := time.Now()
 	tx, err := h.DB.Beginx()
 	if err != nil {
 		c.Logger().Error(err)
@@ -1297,14 +1296,10 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	defer tx.Rollback()
 
 	var classCount int
-	log.Printf("XXX time before SELECT COUNT(*) : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                                        // @@@
 	if err := tx.Get(&classCount, "SELECT COUNT(*) FROM `classes` WHERE `id` = ? FOR UPDATE", classID); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	log.Printf("XXX time after SELECT COUNT(*) : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                                       // @@@
 	if classCount == 0 {
 		return c.String(http.StatusNotFound, "No such class.")
 	}
@@ -1317,8 +1312,6 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	log.Printf("XXX time after SELECT `submissoins` : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                                            // @@@
 
 	zipFilePath := AssignmentsDirectory + classID + ".zip"
 	var ziperr error = nil
@@ -1327,37 +1320,27 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	go func() {
 		defer wg.Done()
 
-		tfromZip := time.Now() // @@@
 		if err := createSubmissionsZip(zipFilePath, classID, submissions); err != nil {
 			log.Fatal(err)
 			ziperr = c.NoContent(http.StatusInternalServerError)
 			return
 		}
-		log.Printf("XXX time after Zip : %s %v", zipFilePath, time.Now().Sub(tfromZip)) // @@@
 	}()
 
-	log.Printf("XXX time before UPDATE : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                               // @@@
 	if _, err := tx.Exec("UPDATE `classes` SET `submission_closed` = true WHERE `id` = ?", classID); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	log.Printf("XXX time after UPDATE : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                              // @@@
 
 	if err := tx.Commit(); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	log.Printf("XXX time after Commit : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                              // @@@
 
 	wg.Wait()
 	if ziperr != nil {
 		return ziperr
 	}
-	log.Printf("XXX time after wg.Wait : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                               // @@@
 
 	return c.File(zipFilePath)
 }
@@ -1367,6 +1350,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	if err == nil { // exists
 		return nil
 	}
+	tfrom := time.Now() // @@@
 
 	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
 	if err != nil {
@@ -1377,6 +1361,8 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	defer func() {
 		exec.Command("rm", "-rf", tmpDir).Run()
 	}()
+	log.Printf("YYY time after TempDir : %v", time.Now().Sub(tfrom)) // @@@
+	tfrom = time.Now()                                               // @@@
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
@@ -1387,12 +1373,16 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 			return err
 		}
 	}
+	log.Printf("YYY time after Link : %v", time.Now().Sub(tfrom)) // @@@
+	tfrom = time.Now()                                            // @@@
 
 	// -i 'tmpDir/*': 空zipを許す
 	out, err := exec.Command("zip", "-1", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
 	if err != nil {
 		log.Fatal("ERROR zip", zipFilePath, tmpDir, string(out), err)
 	}
+	log.Printf("YYY time after Zip : %v", time.Now().Sub(tfrom)) // @@@
+
 	return err
 }
 
