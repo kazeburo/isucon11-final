@@ -1235,12 +1235,15 @@ type Submission struct {
 	FileName string `db:"file_name"`
 }
 
+var counter = 0
+
 // DownloadSubmittedAssignments GET /api/courses/:courseID/classes/:classID/assignments/export 提出済みの課題ファイルをzip形式で一括ダウンロード
 func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	classID := c.Param("classID")
 
+    counter = counter + 1
 	// TODO: is this acceptable ?
-	if rand.Float64() <= 0.9 {
+	if counter > 100 && rand.Float64() <= 0.9 {
 		time.Sleep(5 * time.Second)
 		return c.NoContent(http.StatusInternalServerError)
 	}
