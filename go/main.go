@@ -1307,15 +1307,14 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 }
 
 func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) error {
-	dir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
+	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
 	if err != nil {
-		log.Fatal("ERROR ioutil.TempDir", dir, err)
+		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
 		return err
 	}
 	defer func() {
-		exec.Command("rm", "-rf", dir).Run()
+		exec.Command("rm", "-rf", tmpDir).Run()
 	}()
-	tmpDir := dir + "/" + AssignmentsDirectory + classID + "/"
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
