@@ -441,7 +441,7 @@ func (h *handlers) GetRegisteredCourses(c echo.Context) error {
 	}
 
 	res := make([]GetRegisteredCourseResponseContent, 0)
-	query := "SELECT `courses`.`id`, `courses`.`name`, `users`.`name` AS `teacher`, `courses`.`period`, `course`.`day_of_week`" +
+	query := "SELECT `courses`.`id`, `courses`.`name`, `users`.`name` AS `teacher`, `courses`.`period`, `courses`.`day_of_week`" +
 		" FROM `courses`" +
 		" JOIN `registrations` ON `courses`.`id` = `registrations`.`course_id`" +
 		" JOIN `users` ON `courses`.`teacher_id` = `users`.`id`" +
