@@ -1308,11 +1308,13 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 
 func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) ([]byte, error) {
 	tmpDir := AssignmentsDirectory + classID + "/"
-	if out, err := exec.Command("rm", "-rf", tmpDir).CombinedOutput(); err != nil {
-		log.Fatal("ERROR rm -rf " + tmpDir)
-		return out, err
-	}
-	if out, err := exec.Command("mkdir", tmpDir).CombinedOutput(); err != nil {
+	/*
+		if out, err := exec.Command("rm", "-rf", tmpDir).CombinedOutput(); err != nil {
+			log.Fatal("ERROR rm -rf " + tmpDir)
+			return out, err
+		}
+	*/
+	if out, err := exec.Command("mkdir", "-p", tmpDir).CombinedOutput(); err != nil {
 		log.Fatal("ERROR mkdir " + tmpDir)
 		return out, err
 	}
@@ -1324,7 +1326,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 			tmpDir+submission.UserCode+"-"+submission.FileName,
 		).CombinedOutput(); err != nil {
-			log.Fatal("ERROR cp",
+			log.Fatal("ERROR cp", string(out),
 				AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 				tmpDir+submission.UserCode+"-"+submission.FileName)
 			return out, err
