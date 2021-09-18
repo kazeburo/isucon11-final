@@ -13,7 +13,24 @@ func GetDB(batch bool) (*sqlx.DB, error) {
 	mysqlConfig.Passwd = GetEnv("MYSQL_PASS", "isucon")
 	mysqlConfig.DBName = GetEnv("MYSQL_DATABASE", "isucholar")
 	mysqlConfig.Params = map[string]string{
-		"time_zone": "'+00:00'",
+		"time_zone":         "'+00:00'",
+		"interpolateParams": "true",
+	}
+	mysqlConfig.ParseTime = true
+	mysqlConfig.MultiStatements = batch
+
+	return sqlx.Open("mysql", mysqlConfig.FormatDSN())
+}
+
+func GetReplicaDB(batch bool) (*sqlx.DB, error) {
+	mysqlConfig := mysql.NewConfig()
+	mysqlConfig.Net = "tcp"
+	mysqlConfig.Addr = "10.11.9.102:" + GetEnv("MYSQL_PORT", "3306")
+	mysqlConfig.User = GetEnv("MYSQL_USER", "isucon")
+	mysqlConfig.Passwd = GetEnv("MYSQL_PASS", "isucon")
+	mysqlConfig.DBName = GetEnv("MYSQL_DATABASE", "isucholar")
+	mysqlConfig.Params = map[string]string{
+		"time_zone":         "'+00:00'",
 		"interpolateParams": "true",
 	}
 	mysqlConfig.ParseTime = true
