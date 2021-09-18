@@ -1350,8 +1350,6 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	if err == nil { // exists
 		return nil
 	}
-	tfrom := time.Now() // @@@
-
 	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
 	if err != nil {
 		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
@@ -1361,8 +1359,6 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	defer func() {
 		exec.Command("rm", "-rf", tmpDir).Run()
 	}()
-	log.Printf("YYY time after TempDir : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                               // @@@
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
@@ -1373,15 +1369,12 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 			return err
 		}
 	}
-	log.Printf("YYY time after Link : %v", time.Now().Sub(tfrom)) // @@@
-	tfrom = time.Now()                                            // @@@
 
 	// -i 'tmpDir/*': 空zipを許す
 	out, err := exec.Command("zip", "-1", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
 	if err != nil {
 		log.Fatal("ERROR zip", zipFilePath, tmpDir, string(out), err)
 	}
-	log.Printf("YYY time after Zip : %v", time.Now().Sub(tfrom)) // @@@
 
 	return err
 }
