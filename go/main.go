@@ -1380,12 +1380,8 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
-		if out, err := exec.Command(
-			"ln",
-			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
-			tmpDir+submission.UserCode+"-"+submission.FileName,
-		).CombinedOutput(); err != nil {
-			log.Fatal("ERROR ln", string(out), err,
+		if err := os.Link(AssignmentsDirectory+classID+"-"+submission.UserID+".pdf", tmpDir+submission.UserCode+"-"+submission.FileName); err != nil {
+			log.Fatal("ERROR link", err,
 				AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 				tmpDir+submission.UserCode+"-"+submission.FileName)
 			return err
