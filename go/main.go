@@ -658,7 +658,6 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			classIdList = append(classIdList, class.ID)
 			classIdValues = append(classIdValues, "'"+class.ID+"'")
 		}
-		log.Printf("XXX classes[%v] classIdValues [%v]", classes, classIdValues)
 		type SubmissionsCount struct {
 			ClassId string `db:"class_id"`
 			Count   int    `db:"count"`
@@ -673,7 +672,6 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		log.Printf("XXX err[%v] submissionsCountList [%v]", err, submissionsCountList) // @@@
 		type MyScore struct {
 			ClassId string `db:"class_id"`
 			Score   int    `db:"score"`
@@ -685,7 +683,6 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		log.Printf("XXX err[%v] myScoreList [%v]", err, myScoreList) // @@@
 
 		submissionsCountMap := map[string]SubmissionsCount{}
 		for _, submissionsCount := range submissionsCountList {
@@ -695,8 +692,6 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		for _, myScore := range myScoreList {
 			myScoreMap[myScore.ClassId] = myScore
 		}
-		log.Printf("XXX submissionsCountMap [%v]", submissionsCountMap) // @@@
-		log.Printf("XXX myScoreMap [%v]", myScoreMap)                   // @@@
 
 		for _, class := range classes {
 			if myScore, ok := myScoreMap[class.ID]; ok {
