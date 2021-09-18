@@ -1333,7 +1333,7 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 			ziperr = c.NoContent(http.StatusInternalServerError)
 			return
 		}
-		log.Printf("XXX time after Zip : %v", time.Now().Sub(tfromZip)) // @@@
+		log.Printf("XXX time after Zip : %s %v", zipFilePath, time.Now().Sub(tfromZip)) // @@@
 	}()
 
 	log.Printf("XXX time before UPDATE : %v", time.Now().Sub(tfrom)) // @@@
