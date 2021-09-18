@@ -622,6 +622,14 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		genGpas(h.DB)
+	}()
+
 	// 履修している科目一覧取得
 	var registeredCourses []Course
 	query := "SELECT `courses`.*" +
@@ -722,7 +730,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 
 	// GPAの統計値
 	// 一つでも修了した科目がある学生のGPA一覧
-	genGpas(h.DB)
+	wg.Wait()
 	var gpas []float64
 	gpasLock.RLock()
 	defer gpasLock.RUnlock()
