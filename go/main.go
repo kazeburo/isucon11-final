@@ -1297,36 +1297,36 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	}
 
 	zipFilePath := AssignmentsDirectory + classID + ".zip"
-	if err := createSubmissionsZip(zipFilePath, classID, submissions); err != nil {
-		c.Logger().Error(err)
+	if out, err := createSubmissionsZip(zipFilePath, classID, submissions); err != nil {
+		c.Logger().Error(string(out))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	return c.File(zipFilePath)
 }
 
-func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) error {
+func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) ([]byte, error) {
 	tmpDir := AssignmentsDirectory + classID + "/"
-	if err := exec.Command("rm", "-rf", tmpDir).Run(); err != nil {
-		return err
+	if out, err := exec.Command("rm", "-rf", tmpDir).Output(); err != nil {
+		return out, err
 	}
-	if err := exec.Command("mkdir", tmpDir).Run(); err != nil {
-		return err
+	if out, err := exec.Command("mkdir", tmpDir).Output(); err != nil {
+		return out, err
 	}
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
-		if err := exec.Command(
+		if out, err := exec.Command(
 			"cp",
 			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 			tmpDir+submission.UserCode+"-"+submission.FileName,
-		).Run(); err != nil {
-			return err
+		).Output(); err != nil {
+			return out, err
 		}
 	}
 
 	// -i 'tmpDir/*': 空zipを許す
-	return exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").Run()
+	return exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").Output()
 }
 
 // ---------- Announcement API ----------
