@@ -1248,7 +1248,8 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	var classCount int
 	if err := tx.Get(&classCount, "SELECT 1 FROM `classes` WHERE `id` = ? FOR UPDATE", classID); err != nil {
 		c.Logger().Error(err)
-		return c.NoContent(http.StatusInternalServerError)
+		return c.String(http.StatusNotFound, "No such class.")
+		//		return c.NoContent(http.StatusInternalServerError)
 	}
 	if classCount == 0 {
 		return c.String(http.StatusNotFound, "No such class.")
