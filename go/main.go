@@ -656,7 +656,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		for _, class := range classes {
 			classIdValues = append(classIdValues, class.ID)
 		}
-		log.Fatal(fmt.Sprintf("XXX classes[%v] classIdValues [%v]", classes, classIdValues))
+		log.Printf("XXX classes[%v] classIdValues [%v]", classes, classIdValues)
 		type SubmissionsCount struct {
 			ClassId string `db:"class_id"`
 			Count   int    `db:"count"`
@@ -667,7 +667,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			"SELECT class_id, COUNT(*) as `count` FROM `submissons` WHERE "+
 				"`class_id` IN ("+strings.Join(classIdValues, ",")+") "+
 				"GROUP by class_id")
-		log.Fatal(fmt.Sprintf("XXX err[%v] submissionsCountList [%v]", err, submissionsCountList)) // @@@
+		log.Printf("XXX err[%v] submissionsCountList [%v]", err, submissionsCountList) // @@@
 		submissionsCount := len(submissionsCountList)
 		type MyScore struct {
 			ClassId string `db:"class_id"`
@@ -676,7 +676,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		myScoreList := []MyScore{}
 		err = h.DB.Select(
 			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID)
-		log.Fatal(fmt.Sprintf("XXX err[%v] myScoreList [%v]", err, myScoreList)) // @@@
+		log.Printf("XXX err[%v] myScoreList [%v]", err, myScoreList) // @@@
 
 		submissionsCountMap := map[string]SubmissionsCount{}
 		for _, submissionsCount := range submissionsCountList {
@@ -686,8 +686,8 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		for _, myScore := range myScoreList {
 			myScoreMap[myScore.ClassId] = myScore
 		}
-		log.Fatal(fmt.Sprintf("XXX submissionsCountMap [%v]", submissionsCountMap)) // @@@
-		log.Fatal(fmt.Sprintf("XXX myScoreMap [%v]", myScoreMap))                   // @@@
+		log.Printf("XXX submissionsCountMap [%v]", submissionsCountMap) // @@@
+		log.Printf("XXX myScoreMap [%v]", myScoreMap)                   // @@@
 
 		for _, class := range classes {
 			if myScore, ok := myScoreMap[class.ID]; ok {
