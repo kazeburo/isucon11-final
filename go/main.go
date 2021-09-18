@@ -622,7 +622,7 @@ var tsCache map[string][]int
 
 func (h *handlers) updategetTotalScores() {
 	tsCache = map[string][]int{}
-	ticker := time.NewTicker(750 * time.Millisecond)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
@@ -636,7 +636,7 @@ func (h *handlers) getTotalScoresCache(id string) []int {
 	tsLock.RLock()
 	defer tsLock.RUnlock()
 	var result []int
-	if _, ok := tsCache[id]; !ok {
+	if _, ok := tsCache[id]; ok {
 		result = append(result, tsCache[id]...)
 	}
 	return result
