@@ -672,51 +672,52 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		type MyScore struct {
-			ClassId string        `db:"class_id"`
-			Score   sql.NullInt32 `db:"score"`
-		}
-		myScoreList := []MyScore{}
-		err = h.DB.Select(
-			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID)
-		if err != nil {
-			c.Logger().Error(err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+		if 0 < len(submissionsCountList) {
+			type MyScore struct {
+				ClassId string        `db:"class_id"`
+				Score   sql.NullInt32 `db:"score"`
+			}
+			myScoreList := []MyScore{}
+			err = h.DB.Select(
+				&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID)
+			if err != nil {
+				c.Logger().Error(err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
 
-		submissionsCountMap := map[string]SubmissionsCount{}
-		for _, submissionsCount := range submissionsCountList {
-			submissionsCountMap[submissionsCount.ClassId] = submissionsCount
-		}
-		myScoreMap := map[string]MyScore{}
-		for _, myScore := range myScoreList {
-			if myScore.Score.Valid {
-				myScoreMap[myScore.ClassId] = myScore
+			submissionsCountMap := map[string]SubmissionsCount{}
+			for _, submissionsCount := range submissionsCountList {
+				submissionsCountMap[submissionsCount.ClassId] = submissionsCount
+			}
+			myScoreMap := map[string]MyScore{}
+			for _, myScore := range myScoreList {
+				if myScore.Score.Valid {
+					myScoreMap[myScore.ClassId] = myScore
+				}
+			}
+
+			for _, class := range classes {
+				if myScore, ok := myScoreMap[class.ID]; ok {
+					score := int(myScore.Score.Int32)
+					myTotalScore += score
+					classScores = append(classScores, ClassScore{
+						ClassID:    class.ID,
+						Part:       class.Part,
+						Title:      class.Title,
+						Score:      &score,
+						Submitters: submissionsCountMap[class.ID].Count,
+					})
+				} else {
+					classScores = append(classScores, ClassScore{
+						ClassID:    class.ID,
+						Part:       class.Part,
+						Title:      class.Title,
+						Score:      nil,
+						Submitters: submissionsCountMap[class.ID].Count,
+					})
+				}
 			}
 		}
-
-		for _, class := range classes {
-			if myScore, ok := myScoreMap[class.ID]; ok {
-				score := int(myScore.Score.Int32)
-				myTotalScore += score
-				classScores = append(classScores, ClassScore{
-					ClassID:    class.ID,
-					Part:       class.Part,
-					Title:      class.Title,
-					Score:      &score,
-					Submitters: submissionsCountMap[class.ID].Count,
-				})
-			} else {
-				classScores = append(classScores, ClassScore{
-					ClassID:    class.ID,
-					Part:       class.Part,
-					Title:      class.Title,
-					Score:      nil,
-					Submitters: submissionsCountMap[class.ID].Count,
-				})
-			}
-		}
-
 		// この科目を履修している学生のTotalScore一覧を取得
 		var totals []int
 		query := "SELECT IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
