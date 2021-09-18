@@ -1275,7 +1275,7 @@ func (h *handlers) RegisterScores(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	time.Sleep(100 * time.Millisecond) // for replication
+	time.Sleep(200 * time.Millisecond) // for replication
 
 	return c.NoContent(http.StatusNoContent)
 }
