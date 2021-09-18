@@ -1263,18 +1263,31 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	zipFilePath := AssignmentsDirectory + classID + ".zip"
+	var ziperr error = nil
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		if err := createSubmissionsZip(zipFilePath, classID, submissions); err != nil {
+			log.Fatal(err)
+			ziperr = c.NoContent(http.StatusInternalServerError)
+			return
+		}
+	}()
+
 	if _, err := tx.Exec("UPDATE `classes` SET `submission_closed` = true WHERE `id` = ?", classID); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	if err := tx.Commit(); err != nil {
-		c.Logger().Error(err)
-		return c.NoContent(http.StatusInternalServerError)
+	wg.Wait()
+	if ziperr != nil {
+		return ziperr
 	}
 
-	zipFilePath := AssignmentsDirectory + classID + ".zip"
-	if err := createSubmissionsZip(zipFilePath, classID, submissions); err != nil {
+	if err := tx.Commit(); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
