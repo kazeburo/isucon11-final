@@ -1158,18 +1158,17 @@ func (h *handlers) SubmitAssignment(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Submission has been closed for this class.")
 	}
 
+	file, header, err := c.Request().FormFile("file")
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid file.")
+	}
+	defer file.Close()
+
 	var rwerr error = nil
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		file, header, err := c.Request().FormFile("file")
-		if err != nil {
-			rwerr = c.String(http.StatusBadRequest, "Invalid file.")
-			return
-		}
-		defer file.Close()
 
 		data, err := io.ReadAll(file)
 		if err != nil {
