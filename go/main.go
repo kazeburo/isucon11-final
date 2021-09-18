@@ -119,6 +119,7 @@ func main() {
 		}
 	}
 
+	// go h.updategetTotalScores()
 	// go updateGpas(db)
 
 	e.Logger.Error(e.StartServer(e.Server))
@@ -198,6 +199,7 @@ func (h *handlers) Initialize(c echo.Context) error {
 	}
 
 	genGpas(dbForInit)
+	h.updateTotalScoresCache()
 
 	res := InitializeResponse{
 		Language: "go",
@@ -617,6 +619,66 @@ type ClassScore struct {
 	Submitters int    `json:"submitters"` // 提出した学生数
 }
 
+type totalScore struct {
+	CourseID   string `db:"id"`
+	TotalScore int    `db:"total_score"`
+}
+
+var tsLock sync.RWMutex
+var tsCache map[string][]int
+
+func (h *handlers) updategetTotalScores() {
+	tsCache = map[string][]int{}
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			h.updateTotalScoresCache()
+		}
+	}
+}
+
+func (h *handlers) getTotalScoresCache(id string) []int {
+	tsLock.RLock()
+	defer tsLock.RUnlock()
+	var result []int
+	if _, ok := tsCache[id]; ok {
+		result = append(result, tsCache[id]...)
+	}
+	return result
+}
+
+func (h *handlers) updateTotalScoresCache() error {
+	var totals []totalScore
+	/* query := "SELECT `courses`.`id`,IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
+		" FROM `users`" +
+		" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
+		" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id`" +
+		" LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id`" +
+		" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
+		" GROUP BY `users`.`id`" */
+	query := 'SELECT cid AS id, sum(score) AS total_score FROM (SELECT `courses`.`id` AS cid,`users`.`id` AS uid,`submissions`.`score` FROM `users` JOIN `registrations` ON `users`.`id` = `registrations`.`user_id` JOIN `courses` ON `registrations`.`course_id` = `courses`.`id` LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id` LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`) AS t GROUP BY cid,uid'
+	if err := h.DB.Select(&totals, query); err != nil {
+		log.Printf("%v", err)
+		return err
+	}
+	result := map[string][]int{}
+	for _, t := range totals {
+		if _, ok := result[t.CourseID]; !ok {
+			result[t.CourseID] = make([]int, 0)
+			result[t.CourseID] = append(result[t.CourseID], t.TotalScore)
+		} else {
+			result[t.CourseID] = append(result[t.CourseID], t.TotalScore)
+		}
+	}
+	tsLock.Lock()
+	defer tsLock.Unlock()
+	tsCache = result
+
+	return nil
+}
+
 // GetGrades GET /api/users/me/grades 成績取得
 func (h *handlers) GetGrades(c echo.Context) error {
 	userID, _, _, err := getUserInfo(c)
@@ -631,6 +693,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		defer wg.Done()
 		sfGroup.Do("genGpas", func() (interface{}, error) {
 			genGpas(h.DB)
+			h.updateTotalScoresCache()
 			return nil, nil
 		})
 	}()
@@ -698,19 +761,22 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		}
 
 		// この科目を履修している学生のTotalScore一覧を取得
-		var totals []int
-		query := "SELECT IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
-			" FROM `users`" +
-			" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
-			" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id`" +
-			" LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id`" +
-			" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
-			" WHERE `courses`.`id` = ?" +
-			" GROUP BY `users`.`id`"
-		if err := h.DB.Select(&totals, query, course.ID); err != nil {
-			c.Logger().Error(err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+		/*
+			var totals []int
+			query := "SELECT IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
+				" FROM `users`" +
+				" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
+				" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id`" +
+				" LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id`" +
+				" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
+				" WHERE `courses`.`id` = ?" +
+				" GROUP BY `users`.`id`"
+			if err := h.DB.Select(&totals, query, course.ID); err != nil {
+				c.Logger().Error(err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+		*/
+		totals := h.getTotalScoresCache(course.ID)
 
 		courseResults = append(courseResults, CourseResult{
 			Name:             course.Name,
