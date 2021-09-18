@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -1282,27 +1283,36 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 }
 
 func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) error {
-	tmpDir := AssignmentsDirectory + classID + "/"
-	if err := exec.Command("rm", "-rf", tmpDir).Run(); err != nil {
+	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
+	if err != nil {
+		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
 		return err
 	}
-	if err := exec.Command("mkdir", tmpDir).Run(); err != nil {
-		return err
-	}
+	tmpDir = tmpDir + "/"
+	defer func() {
+		exec.Command("rm", "-rf", tmpDir).Run()
+	}()
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
-		if err := exec.Command(
+		if out, err := exec.Command(
 			"cp",
 			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 			tmpDir+submission.UserCode+"-"+submission.FileName,
-		).Run(); err != nil {
+		).CombinedOutput(); err != nil {
+			log.Fatal("ERROR cp", string(out), err,
+				AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
+				tmpDir+submission.UserCode+"-"+submission.FileName)
 			return err
 		}
 	}
 
 	// -i 'tmpDir/*': 空zipを許す
-	return exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").Run()
+	out, err := exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
+	if err != nil {
+		log.Fatal("ERROR zip", zipFilePath, tmpDir, string(out), err)
+	}
+	return err
 }
 
 // ---------- Announcement API ----------
