@@ -39,6 +39,9 @@ type handlers struct {
 	DB *sqlx.DB
 }
 
+var gpasLock sync.RWMutex
+var gpasCache []float64
+
 var use_profiler = true
 
 func initProfiler() {
@@ -113,7 +116,47 @@ func main() {
 		}
 	}
 
+	go updateGpas(db)
+
 	e.Logger.Error(e.StartServer(e.Server))
+}
+
+func updateGpas(db *sqlx.DB) {
+	ticker := time.NewTicker(1000 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			genGpas(db)
+		}
+	}
+}
+
+func genGpas(db *sqlx.DB) {
+	gpasLock.Lock()
+	defer gpasLock.Unlock()
+
+	var gpas []float64
+	query := "SELECT IFNULL(SUM(`submissions`.`score` * `courses`.`credit`), 0) / 100 / `credits`.`credits` AS `gpa`" +
+		" FROM `users`" +
+		" JOIN (" +
+		"     SELECT `users`.`id` AS `user_id`, SUM(`courses`.`credit`) AS `credits`" +
+		"     FROM `users`" +
+		"     JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
+		"     JOIN `courses` ON `registrations`.`course_id` = `courses`.`id` AND `courses`.`status` = ?" +
+		"     GROUP BY `users`.`id`" +
+		" ) AS `credits` ON `credits`.`user_id` = `users`.`id`" +
+		" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
+		" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id` AND `courses`.`status` = ?" +
+		" LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id`" +
+		" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
+		" WHERE `users`.`type` = ?" +
+		" GROUP BY `users`.`id`"
+	if err := db.Select(&gpas, query, StatusClosed, StatusClosed, Student); err != nil {
+		log.Fatal(err)
+		return
+	}
+	gpasCache = gpas
 }
 
 type InitializeResponse struct {
@@ -677,25 +720,9 @@ func (h *handlers) GetGrades(c echo.Context) error {
 	// GPAの統計値
 	// 一つでも修了した科目がある学生のGPA一覧
 	var gpas []float64
-	query = "SELECT IFNULL(SUM(`submissions`.`score` * `courses`.`credit`), 0) / 100 / `credits`.`credits` AS `gpa`" +
-		" FROM `users`" +
-		" JOIN (" +
-		"     SELECT `users`.`id` AS `user_id`, SUM(`courses`.`credit`) AS `credits`" +
-		"     FROM `users`" +
-		"     JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
-		"     JOIN `courses` ON `registrations`.`course_id` = `courses`.`id` AND `courses`.`status` = ?" +
-		"     GROUP BY `users`.`id`" +
-		" ) AS `credits` ON `credits`.`user_id` = `users`.`id`" +
-		" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
-		" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id` AND `courses`.`status` = ?" +
-		" LEFT JOIN `classes` ON `courses`.`id` = `classes`.`course_id`" +
-		" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
-		" WHERE `users`.`type` = ?" +
-		" GROUP BY `users`.`id`"
-	if err := h.DB.Select(&gpas, query, StatusClosed, StatusClosed, Student); err != nil {
-		c.Logger().Error(err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+	gpasLock.RLock()
+	defer gpasLock.RUnlock()
+	gpas = gpasCache
 
 	res := GetGradeResponse{
 		Summary: Summary{
