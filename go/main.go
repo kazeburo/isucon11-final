@@ -1350,7 +1350,6 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	if err == nil { // exists
 		return nil
 	}
-
 	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
 	if err != nil {
 		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
@@ -1363,12 +1362,8 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 
 	// ファイル名を指定の形式に変更
 	for _, submission := range submissions {
-		if out, err := exec.Command(
-			"ln",
-			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
-			tmpDir+submission.UserCode+"-"+submission.FileName,
-		).CombinedOutput(); err != nil {
-			log.Fatal("ERROR ln", string(out), err,
+		if err := os.Link(AssignmentsDirectory+classID+"-"+submission.UserID+".pdf", tmpDir+submission.UserCode+"-"+submission.FileName); err != nil {
+			log.Fatal("ERROR link", err,
 				AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 				tmpDir+submission.UserCode+"-"+submission.FileName)
 			return err
@@ -1376,10 +1371,11 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	}
 
 	// -i 'tmpDir/*': 空zipを許す
-	out, err := exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
+	out, err := exec.Command("zip", "-1", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
 	if err != nil {
 		log.Fatal("ERROR zip", zipFilePath, tmpDir, string(out), err)
 	}
+
 	return err
 }
 
