@@ -677,7 +677,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		submissionsCount := len(submissionsCountList)
 		type MyScore struct {
 			ClassId string `db:"class_id"`
-			Score   int    `db:"score`
+			Score   int    `db:"score"`
 		}
 		myScoreList := []MyScore{}
 		err = h.DB.Select(
