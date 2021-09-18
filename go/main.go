@@ -1282,14 +1282,14 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	wg.Wait()
-	if ziperr != nil {
-		return ziperr
-	}
-
 	if err := tx.Commit(); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	wg.Wait()
+	if ziperr != nil {
+		return ziperr
 	}
 
 	return c.File(zipFilePath)
