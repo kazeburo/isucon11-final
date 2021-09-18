@@ -203,6 +203,7 @@ func (h *handlers) Initialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	time.Sleep(2 * time.Second)
 	genGpas(dbForInit)
 
 	res := InitializeResponse{
