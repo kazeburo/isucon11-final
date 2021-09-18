@@ -668,7 +668,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			&submissionsCountList,
 			"SELECT class_id, COUNT(*) as `count` FROM `submissions` WHERE "+
 				"`class_id` IN ("+strings.Join(classIdValues, ",")+") "+
-				"GROUP by class_id", classIdList)
+				"GROUP by class_id", classIdList...)
 		if err != nil {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
@@ -681,7 +681,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		}
 		myScoreList := []MyScore{}
 		err = h.DB.Select(
-			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID, classIdList)
+			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID, classIdList...)
 		if err != nil {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
