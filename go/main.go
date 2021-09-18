@@ -25,6 +25,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -43,6 +44,8 @@ var gpasLock sync.RWMutex
 var gpasCache []float64
 
 var use_profiler = true
+
+var sfGroup singleflight.Group
 
 func initProfiler() {
 	if !use_profiler {
@@ -722,7 +725,10 @@ func (h *handlers) GetGrades(c echo.Context) error {
 
 	// GPAの統計値
 	// 一つでも修了した科目がある学生のGPA一覧
-	genGpas(h.DB)
+	sfGroup.Do("genGpas", func() (interface{}, error) {
+		genGpas(h.DB)
+		return nil, nil
+	})
 	var gpas []float64
 	gpasLock.RLock()
 	defer gpasLock.RUnlock()
