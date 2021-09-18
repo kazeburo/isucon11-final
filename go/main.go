@@ -37,7 +37,8 @@ const (
 )
 
 type handlers struct {
-	DB *sqlx.DB
+	DB      *sqlx.DB
+	Replica *sqlx.DB
 }
 
 var gpasLock sync.RWMutex
@@ -82,8 +83,13 @@ func main() {
 	db.SetMaxOpenConns(100)
 	db.SetMaxIdleConns(100)
 
+	replica, _ := GetReplicaDB(false)
+	replica.SetMaxOpenConns(100)
+	replica.SetMaxIdleConns(100)
+
 	h := &handlers{
-		DB: db,
+		DB:      db,
+		Replica: replica,
 	}
 
 	e.POST("/initialize", h.Initialize)
@@ -630,7 +636,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 	go func() {
 		defer wg.Done()
 		sfGroup.Do("genGpas", func() (interface{}, error) {
-			genGpas(h.DB)
+			genGpas(h.Replica)
 			return nil, nil
 		})
 	}()
@@ -641,7 +647,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		" FROM `registrations`" +
 		" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id`" +
 		" WHERE `user_id` = ?"
-	if err := h.DB.Select(&registeredCourses, query, userID); err != nil {
+	if err := h.Replica.Select(&registeredCourses, query, userID); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -667,13 +673,13 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		var myTotalScore int
 		for _, class := range classes {
 			var submissionsCount int
-			if err := h.DB.Get(&submissionsCount, "SELECT COUNT(*) FROM `submissions` WHERE `class_id` = ?", class.ID); err != nil {
+			if err := h.Replica.Get(&submissionsCount, "SELECT COUNT(*) FROM `submissions` WHERE `class_id` = ?", class.ID); err != nil {
 				c.Logger().Error(err)
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
 			var myScore sql.NullInt64
-			if err := h.DB.Get(&myScore, "SELECT `submissions`.`score` FROM `submissions` WHERE `user_id` = ? AND `class_id` = ?", userID, class.ID); err != nil && err != sql.ErrNoRows {
+			if err := h.Replica.Get(&myScore, "SELECT `submissions`.`score` FROM `submissions` WHERE `user_id` = ? AND `class_id` = ?", userID, class.ID); err != nil && err != sql.ErrNoRows {
 				c.Logger().Error(err)
 				return c.NoContent(http.StatusInternalServerError)
 			} else if err == sql.ErrNoRows || !myScore.Valid {
@@ -707,7 +713,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			" LEFT JOIN `submissions` ON `users`.`id` = `submissions`.`user_id` AND `submissions`.`class_id` = `classes`.`id`" +
 			" WHERE `courses`.`id` = ?" +
 			" GROUP BY `users`.`id`"
-		if err := h.DB.Select(&totals, query, course.ID); err != nil {
+		if err := h.Replica.Select(&totals, query, course.ID); err != nil {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
