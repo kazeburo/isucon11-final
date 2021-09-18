@@ -1393,7 +1393,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	}
 
 	// -i 'tmpDir/*': 空zipを許す
-	out, err := exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
+	out, err := exec.Command("zip", "-1", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
 	if err != nil {
 		log.Fatal("ERROR zip", zipFilePath, tmpDir, string(out), err)
 	}
