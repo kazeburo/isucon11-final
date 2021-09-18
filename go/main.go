@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,7 +13,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	"cloud.google.com/go/profiler"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -34,7 +37,30 @@ type handlers struct {
 	DB *sqlx.DB
 }
 
+var use_profiler = true
+
+func initProfiler() {
+	if !use_profiler {
+		return
+	}
+
+	serviceVersion := time.Now().Format("2006.01.02.15.04")
+	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if projectID == "" {
+		projectID = "xenon-heading-825"
+	}
+	if err := profiler.Start(profiler.Config{
+		Service:        "isu11final",
+		ServiceVersion: serviceVersion,
+		ProjectID:      projectID,
+	}); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+	initProfiler()
+
 	e := echo.New()
 	e.Debug = GetEnv("DEBUG", "") == "true"
 	e.Server.Addr = fmt.Sprintf(":%v", GetEnv("PORT", "7000"))
@@ -45,7 +71,8 @@ func main() {
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("trapnomura"))))
 
 	db, _ := GetDB(false)
-	db.SetMaxOpenConns(10)
+	//db.SetMaxOpenConns(10)
+	//db.SetMaxIdleConns(10)
 
 	h := &handlers{
 		DB: db,
