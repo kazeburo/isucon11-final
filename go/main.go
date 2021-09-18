@@ -1299,6 +1299,7 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	zipFilePath := AssignmentsDirectory + classID + ".zip"
 	if out, err := createSubmissionsZip(zipFilePath, classID, submissions); err != nil {
 		c.Logger().Error(string(out))
+		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
