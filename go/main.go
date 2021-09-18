@@ -425,11 +425,11 @@ func (h *handlers) GetMe(c echo.Context) error {
 }
 
 type GetRegisteredCourseResponseContent struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Teacher   string    `json:"teacher"`
-	Period    uint8     `json:"period"`
-	DayOfWeek DayOfWeek `json:"day_of_week"`
+	ID        string    `json:"id" " db:"id"`
+	Name      string    `json:"name" db:"name"`
+	Teacher   string    `json:"teacher" db:"teacher"`
+	Period    uint8     `json:"period" db:"period"`
+	DayOfWeek DayOfWeek `json:"day_of_week" db:"day_of_week"`
 }
 
 // GetRegisteredCourses GET /api/users/me/courses 履修中の科目一覧取得
