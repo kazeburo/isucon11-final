@@ -1246,7 +1246,7 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	defer tx.Rollback()
 
 	var classCount int
-	if err := tx.Get(&classCount, "SELECT COUNT(*) FROM `classes` WHERE `id` = ? FOR UPDATE", classID); err != nil {
+	if err := tx.Get(&classCount, "SELECT 1 FROM `classes` WHERE `id` = ? FOR UPDATE", classID); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
