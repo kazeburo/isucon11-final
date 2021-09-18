@@ -1312,6 +1312,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
 		return err
 	}
+	tmpDir = tmpDir + "/"
 	defer func() {
 		exec.Command("rm", "-rf", tmpDir).Run()
 	}()
