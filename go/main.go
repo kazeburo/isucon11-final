@@ -116,7 +116,7 @@ func main() {
 		}
 	}
 
-	go updateGpas(db)
+	// go updateGpas(db)
 
 	e.Logger.Error(e.StartServer(e.Server))
 }
