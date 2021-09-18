@@ -1283,6 +1283,11 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 }
 
 func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) error {
+	_, err := os.Stat(zipFilePath)
+	if err == nil { // exists
+		return nil
+	}
+
 	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
 	if err != nil {
 		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
