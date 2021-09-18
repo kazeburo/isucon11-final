@@ -25,6 +25,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -43,6 +44,8 @@ var gpasLock sync.RWMutex
 var gpasCache []float64
 
 var use_profiler = true
+
+var sfGroup singleflight.Group
 
 func initProfiler() {
 	if !use_profiler {
@@ -116,8 +119,8 @@ func main() {
 		}
 	}
 
-	go updateGpas(db)
-	go h.updategetTotalScores()
+	// go h.updategetTotalScores()
+	// go updateGpas(db)
 
 	e.Logger.Error(e.StartServer(e.Server))
 }
@@ -134,8 +137,6 @@ func updateGpas(db *sqlx.DB) {
 }
 
 func genGpas(db *sqlx.DB) {
-	gpasLock.Lock()
-	defer gpasLock.Unlock()
 
 	var gpas []float64
 	query := "SELECT IFNULL(SUM(`submissions`.`score` * `courses`.`credit`), 0) / 100 / `credits`.`credits` AS `gpa`" +
@@ -157,6 +158,9 @@ func genGpas(db *sqlx.DB) {
 		log.Fatal(err)
 		return
 	}
+
+	gpasLock.Lock()
+	defer gpasLock.Unlock()
 	gpasCache = gpas
 }
 
@@ -193,6 +197,9 @@ func (h *handlers) Initialize(c echo.Context) error {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	genGpas(dbForInit)
+	h.updateTotalScoresCache()
 
 	res := InitializeResponse{
 		Language: "go",
@@ -679,6 +686,17 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		sfGroup.Do("genGpas", func() (interface{}, error) {
+			genGpas(h.DB)
+			h.updateTotalScoresCache()
+			return nil, nil
+		})
+	}()
+
 	// 履修している科目一覧取得
 	var registeredCourses []Course
 	query := "SELECT `courses`.*" +
@@ -782,6 +800,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 
 	// GPAの統計値
 	// 一つでも修了した科目がある学生のGPA一覧
+	wg.Wait()
 	var gpas []float64
 	gpasLock.RLock()
 	defer gpasLock.RUnlock()
