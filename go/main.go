@@ -1308,11 +1308,11 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 
 func createSubmissionsZip(zipFilePath string, classID string, submissions []Submission) ([]byte, error) {
 	tmpDir := AssignmentsDirectory + classID + "/"
-	if out, err := exec.Command("rm", "-rf", tmpDir).Output(); err != nil {
+	if out, err := exec.Command("rm", "-rf", tmpDir).CombinedOutput(); err != nil {
 		log.Fatal("ERROR rm -rf " + tmpDir)
 		return out, err
 	}
-	if out, err := exec.Command("mkdir", tmpDir).Output(); err != nil {
+	if out, err := exec.Command("mkdir", tmpDir).CombinedOutput(); err != nil {
 		log.Fatal("ERROR mkdir " + tmpDir)
 		return out, err
 	}
@@ -1323,7 +1323,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 			"cp",
 			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 			tmpDir+submission.UserCode+"-"+submission.FileName,
-		).Output(); err != nil {
+		).CombinedOutput(); err != nil {
 			log.Fatal("ERROR cp",
 				AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 				tmpDir+submission.UserCode+"-"+submission.FileName)
@@ -1332,7 +1332,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	}
 
 	// -i 'tmpDir/*': 空zipを許す
-	return exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").Output()
+	return exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
 }
 
 // ---------- Announcement API ----------
