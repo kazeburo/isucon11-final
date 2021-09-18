@@ -644,7 +644,7 @@ func (h *handlers) getTotalScoresCache(id string) []int {
 
 func (h *handlers) updateTotalScoresCache() error {
 	var totals []totalScore
-	query := "SELECT IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
+	query := "SELECT `courses`.`id`,IFNULL(SUM(`submissions`.`score`), 0) AS `total_score`" +
 		" FROM `users`" +
 		" JOIN `registrations` ON `users`.`id` = `registrations`.`user_id`" +
 		" JOIN `courses` ON `registrations`.`course_id` = `courses`.`id`" +
