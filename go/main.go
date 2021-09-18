@@ -666,6 +666,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			"SELECT class_id, COUNT(*) as `count` FROM `submissons` WHERE "+
 				"`class_id` IN ("+strings.Join(classIdValues, ",")+") "+
 				"GROUP by class_id")
+		log.Fatal(fmt.Sprintf("XXX submissionsCountList [%v]", submissionsCountList)) // @@@
 		submissionsCount := len(submissionsCountList)
 		type MyScore struct {
 			ClassId string `db:"class_id"`
@@ -674,6 +675,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		myScoreList := []MyScore{}
 		h.DB.Select(
 			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID)
+		log.Fatal(fmt.Sprintf("XXX myScoreList [%v]", myScoreList)) // @@@
 
 		submissionsCountMap := map[string]SubmissionsCount{}
 		for _, submissionsCount := range submissionsCountList {
@@ -683,6 +685,8 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		for _, myScore := range myScoreList {
 			myScoreMap[myScore.ClassId] = myScore
 		}
+		log.Fatal(fmt.Sprintf("XXX submissionsCountMap [%v]", submissionsCountMap)) // @@@
+		log.Fatal(fmt.Sprintf("XXX myScoreMap [%v]", myScoreMap))                   // @@@
 
 		for _, class := range classes {
 			if myScore, ok := myScoreMap[class.ID]; ok {
