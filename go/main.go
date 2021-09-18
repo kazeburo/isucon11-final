@@ -1324,7 +1324,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 			AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 			tmpDir+submission.UserCode+"-"+submission.FileName,
 		).CombinedOutput(); err != nil {
-			log.Fatal("ERROR cp", out, err,
+			log.Fatal("ERROR cp", string(out), err,
 				AssignmentsDirectory+classID+"-"+submission.UserID+".pdf",
 				tmpDir+submission.UserCode+"-"+submission.FileName)
 			return err
@@ -1334,7 +1334,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 	// -i 'tmpDir/*': 空zipを許す
 	out, err := exec.Command("zip", "-j", "-r", zipFilePath, tmpDir, "-i", tmpDir+"*").CombinedOutput()
 	if err != nil {
-		log.Fatal("ERROR zip", zipFilePath, tmpDir, out, err)
+		log.Fatal("ERROR zip", zipFilePath, tmpDir, string(out), err)
 	}
 	return err
 }
