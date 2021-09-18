@@ -1463,10 +1463,10 @@ func (h *handlers) GetAnnouncementList(c echo.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		cntErr = h.Replica.Get(&unreadCount, "SELECT COUNT(*) FROM `unread_announcements` WHERE `user_id` = ? AND NOT `is_deleted`", userID)
+		cntErr = h.DB.Get(&unreadCount, "SELECT COUNT(*) FROM `unread_announcements` WHERE `user_id` = ? AND NOT `is_deleted`", userID)
 	}()
 
-	if err := h.Replica.Select(&announcements, query, args...); err != nil {
+	if err := h.DB.Select(&announcements, query, args...); err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
