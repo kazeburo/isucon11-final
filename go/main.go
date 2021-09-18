@@ -1581,6 +1581,8 @@ func (h *handlers) AddAnnouncement(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	time.Sleep(200 * time.Millisecond) // for replication
+
 	return c.NoContent(http.StatusCreated)
 }
 
