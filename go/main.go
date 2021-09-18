@@ -1288,7 +1288,7 @@ func createSubmissionsZip(zipFilePath string, classID string, submissions []Subm
 		return nil
 	}
 
-	tmpDir, err := ioutil.TempDir(AssignmentsDirectory, "tmp")
+	tmpDir, err := ioutil.TempDir("/dev/shm", "isucon-tmp")
 	if err != nil {
 		log.Fatal("ERROR ioutil.TempDir", tmpDir, err)
 		return err
