@@ -577,6 +577,7 @@ func (h *handlers) RegisterCourses(c echo.Context) error {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+	time.Sleep(200 * time.Millisecond) // for replication
 
 	return c.NoContent(http.StatusOK)
 }
