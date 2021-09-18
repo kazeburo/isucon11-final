@@ -664,9 +664,13 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		submissionsCountList := []SubmissionsCount{}
 		err := h.DB.Select(
 			&submissionsCountList,
-			"SELECT class_id, COUNT(*) as `count` FROM `submissons` WHERE "+
+			"SELECT class_id, COUNT(*) as `count` FROM `submissions` WHERE "+
 				"`class_id` IN ("+strings.Join(classIdValues, ",")+") "+
 				"GROUP by class_id")
+		if err != nil {
+			c.Logger().Error(err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
 		log.Printf("XXX err[%v] submissionsCountList [%v]", err, submissionsCountList) // @@@
 		submissionsCount := len(submissionsCountList)
 		type MyScore struct {
@@ -676,6 +680,10 @@ func (h *handlers) GetGrades(c echo.Context) error {
 		myScoreList := []MyScore{}
 		err = h.DB.Select(
 			&myScoreList, "SELECT class_id, score FROM `submissions` WHERE `user_id` = ? AND `class_id` IN ("+strings.Join(classIdValues, ",")+")", userID)
+		if err != nil {
+			c.Logger().Error(err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
 		log.Printf("XXX err[%v] myScoreList [%v]", err, myScoreList) // @@@
 
 		submissionsCountMap := map[string]SubmissionsCount{}
