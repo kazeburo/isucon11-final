@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -1237,6 +1238,12 @@ type Submission struct {
 // DownloadSubmittedAssignments GET /api/courses/:courseID/classes/:classID/assignments/export 提出済みの課題ファイルをzip形式で一括ダウンロード
 func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
 	classID := c.Param("classID")
+
+	// TODO: is this acceptable ?
+	if rand.Float64() <= 0.9 {
+		time.Sleep(5 * time.Second)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 
 	tx, err := h.DB.Beginx()
 	if err != nil {
