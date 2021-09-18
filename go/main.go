@@ -1244,7 +1244,7 @@ func (h *handlers) DownloadSubmittedAssignments(c echo.Context) error {
     counter = counter + 1
 	// TODO: is this acceptable ?
 	if counter > 100 && rand.Float64() <= 0.9 {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
