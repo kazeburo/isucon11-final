@@ -674,7 +674,6 @@ func (h *handlers) GetGrades(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 		log.Printf("XXX err[%v] submissionsCountList [%v]", err, submissionsCountList) // @@@
-		submissionsCount := len(submissionsCountList)
 		type MyScore struct {
 			ClassId string `db:"class_id"`
 			Score   int    `db:"score"`
@@ -707,7 +706,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 					Part:       class.Part,
 					Title:      class.Title,
 					Score:      &myScore.Score,
-					Submitters: submissionsCount,
+					Submitters: submissionsCountMap[class.ID].Count,
 				})
 			} else {
 				classScores = append(classScores, ClassScore{
@@ -715,7 +714,7 @@ func (h *handlers) GetGrades(c echo.Context) error {
 					Part:       class.Part,
 					Title:      class.Title,
 					Score:      nil,
-					Submitters: submissionsCount,
+					Submitters: submissionsCountMap[class.ID].Count,
 				})
 			}
 		}
