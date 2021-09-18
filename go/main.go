@@ -193,6 +193,8 @@ func (h *handlers) Initialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	genGpas(dbForInit)
+
 	res := InitializeResponse{
 		Language: "go",
 	}
