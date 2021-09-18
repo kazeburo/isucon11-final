@@ -43,7 +43,7 @@ type handlers struct {
 var gpasLock sync.RWMutex
 var gpasCache []float64
 
-var use_profiler = true
+var use_profiler = false
 
 var sfGroup singleflight.Group
 
@@ -202,7 +202,7 @@ func (h *handlers) Initialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(4 * time.Second)
 	genGpas(dbForInit)
 
 	res := InitializeResponse{
